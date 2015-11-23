@@ -54,7 +54,7 @@ class SimpleDB(object):
     def rollback(self):
         """Removes and ignores changes from most recent transaction"""
         if len(self.__transactions) == 0:
-            return False
+            raise NoTransaction('NO TRANSACTION')
 
         del self.__transactions[-1]
 
@@ -63,7 +63,7 @@ class SimpleDB(object):
     def commit(self):
         """Commits changes from all transactions to self.__db"""
         if len(self.__transactions) == 0:
-            return False
+            raise NoTransaction('NO TRANSACTION')
 
         self.__db = self.build_working_db()
         self.__transactions = []
@@ -88,45 +88,68 @@ class SimpleDB(object):
 
         return working_db
 
+class NoTransaction(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+
 def process_command(command, db):
     command = command.split(' ')
     if command[0] == 'END':
         return
 
     elif command[0] == 'SET':
-        db.set(command[1], command[2])
+        try:
+            db.set(command[1], command[2])
+        except:
+            print 'Command format is \"SET variable value\". Please try again.'
+            return
 
     elif command[0] == 'GET':
-        got = db.get(command[1])
+        try:
+            got = db.get(command[1])
+        except:
+            print 'Command format is \"GET variable\". Please try again.'
+            return
+
         if got:
             print got
         else:
             print 'NULL'
 
     elif command[0] == 'UNSET':
-        db.unset(command[1])
+        try:
+            db.unset(command[1])
+        except:
+            print 'Command format is \"UNSET variable\". Please try again.'
+            return
 
     elif command[0] == 'NUMEQUALTO':
-        print db.num_equal_to(command[1])
+        try:
+            print db.num_equal_to(command[1])
+        except:
+            print 'Command format is \"NUMEQUALTO value\". Please try again.'
+            return
 
     elif command[0] == 'BEGIN':
         db.begin()
 
     elif command[0] == 'ROLLBACK':
-        anything_to_rollback = db.rollback()
-
-        if not anything_to_rollback:
-            print 'Nothing to ROLLBACK'
+        try:
+            anything_to_rollback = db.rollback()
+        except NoTransaction as message:
+            print message.value
 
     elif command[0] == 'COMMIT':
-        anything_to_commit = db.commit()
-
-        if not anything_to_commit:
-            print 'Nothing to COMMIT'
+        try:
+            anything_to_commit = db.commit()
+        except NoTransaction as message:
+            print message.value
 
     else:
         print 'Not a valid command, please try again'
-
 
 def main():
     db = SimpleDB()
