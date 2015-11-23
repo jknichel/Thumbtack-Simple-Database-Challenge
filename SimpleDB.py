@@ -158,4 +158,5 @@ def main():
         command = raw_input('')
         process_command(command, db)
 
-main()
+if __name__ == '__main__':
+    main()
